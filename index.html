@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<title>Five Sorts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen print-shop composing stick — header, the 6x5 forme of wood-type tiles, a key legend, then the type case (keyboard). Feedback colours are process inks: cyan = locked, magenta = loose, key = dead. */
+:root {
+  --ground: #E6EAEE;
+  --ink: #161B24;
+  --muted: #5A6372;
+  --block: #FBFAF7;
+  --block-edge: #B9C0CA;
+  --block-edge-strong: #6B7483;
+  --key: #CDD3DB;
+  --key-fg: #161B24;
+  --cyan: #0B6E99;
+  --magenta: #B5175F;
+  --dead: #5A6372;
+  --on-ink: #FFFFFF;
+  --panel: #FFFFFF;
+  --scrim: rgba(22, 27, 36, 0.45);
+  --font-display: "Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #10141A; --ink: #E8ECF1; --muted: #98A2B1; --block: #1A2029; --block-edge: #2F3845;
+    --block-edge-strong: #6E7A8B; --key: #2A323E; --key-fg: #E8ECF1; --cyan: #1B86B8; --magenta: #C9306F;
+    --dead: #3A4350; --on-ink: #FFFFFF; --panel: #1A2029; --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #10141A; --ink: #E8ECF1; --muted: #98A2B1; --block: #1A2029; --block-edge: #2F3845;
+  --block-edge-strong: #6E7A8B; --key: #2A323E; --key-fg: #E8ECF1; --cyan: #1B86B8; --magenta: #C9306F;
+  --dead: #3A4350; --on-ink: #FFFFFF; --panel: #1A2029; --scrim: rgba(0, 0, 0, 0.6); color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ground); color: var(--ink); font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent; overflow: hidden;
+}
+.app {
+  height: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 12px; box-sizing: border-box; gap: 10px;
+}
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 1.7rem; letter-spacing: 0.02em; margin: 0; line-height: 1; }
+h1 span { color: var(--magenta); }
+.tools { display: flex; gap: 6px; align-items: center; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--block-edge); background: var(--block);
+  color: var(--ink); font: 600 1rem var(--font-body); cursor: pointer; display: grid; place-items: center;
+}
+.icon-btn svg { width: 18px; height: 18px; }
+.modebar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--block-edge); border-radius: 8px; overflow: hidden; background: var(--block); }
+.seg button {
+  font: 500 0.85rem var(--font-body); border: 0; background: transparent; color: var(--muted);
+  padding: 7px 14px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+.puzzle-no { font: 500 0.78rem var(--font-mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+button:focus-visible, .key:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+
+main { flex: 1; min-height: 0; display: grid; place-items: center; position: relative; }
+.board {
+  --tile: min(60px, calc((100vw - 72px) / 5), calc((100dvh - 360px) / 6));
+  display: grid; grid-template-rows: repeat(6, var(--tile)); gap: 6px;
+}
+.row { display: grid; grid-template-columns: repeat(5, var(--tile)); gap: 6px; }
+.row.shake { animation: shake 0.42s; }
+.tile {
+  position: relative; display: grid; place-items: center; border-radius: 4px;
+  background: var(--block); border: 2px solid var(--block-edge);
+  font-family: var(--font-display); font-size: calc(var(--tile) * 0.52); text-transform: uppercase;
+  color: var(--ink); user-select: none; box-sizing: border-box;
+}
+.tile.filled { border-color: var(--block-edge-strong); animation: set 0.1s ease-out; }
+.tile.locked, .tile.loose, .tile.dead { color: var(--on-ink); border-color: transparent; }
+.tile.locked { background: var(--cyan); }
+.tile.loose { background: var(--magenta); }
+.tile.dead { background: var(--dead); }
+.tile.loose::after {
+  content: ""; position: absolute; bottom: 5px; left: 50%; width: 22%; height: 3px; margin-left: -11%;
+  border-radius: 2px; background: currentColor; opacity: 0.85;
+}
+.tile.flip { animation: flip 0.5s ease-in-out both; }
+.row.win .tile { animation: hop 0.5s ease both; }
+@keyframes set { from { transform: scale(1.08); } to { transform: scale(1); } }
+@keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+@keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+@keyframes hop { 40% { transform: translateY(-14px); } 70% { transform: translateY(2px); } }
+
+.toast {
+  position: absolute; top: 4px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: var(--ink); color: var(--ground); font: 600 0.9rem var(--font-body);
+  padding: 9px 14px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+}
+.legend { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chip { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+
+.keyboard { display: flex; flex-direction: column; gap: 7px; }
+.krow { display: flex; gap: 5px; justify-content: center; }
+.key {
+  flex: 1 1 0; min-width: 0; max-width: 44px; height: 54px; border: 0; border-radius: 6px;
+  background: var(--key); color: var(--key-fg); font: 600 1rem var(--font-body); text-transform: uppercase;
+  cursor: pointer; padding: 0; display: grid; place-items: center; touch-action: manipulation;
+}
+.key.wide { max-width: 68px; flex-grow: 1.5; font-size: 0.72rem; letter-spacing: 0.04em; }
+.key.locked { background: var(--cyan); color: var(--on-ink); }
+.key.loose { background: var(--magenta); color: var(--on-ink); }
+.key.dead { background: var(--dead); color: var(--on-ink); opacity: 0.75; }
+.key:active { filter: brightness(0.9); }
+.spacer { flex: 0.5 1 0; max-width: 20px; }
+
+.overlay {
+  position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; z-index: 20;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.panel {
+  background: var(--panel); color: var(--ink); border-radius: 10px; width: 100%; max-width: 420px;
+  max-height: 86vh; overflow: auto; padding: 22px 22px 20px; box-sizing: border-box; position: relative;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+}
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; margin: 0 0 12px; text-wrap: balance; }
+.panel h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+.panel p { line-height: 1.5; margin: 0 0 10px; }
+.close { position: absolute; top: 12px; right: 12px; }
+.example { display: flex; gap: 4px; margin: 8px 0 4px; --tile: 38px; }
+.example .tile { width: var(--tile); height: var(--tile); font-size: 20px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+.stats b { display: block; font: 400 1.8rem var(--font-display); font-variant-numeric: tabular-nums; }
+.stats small { font-size: 0.72rem; color: var(--muted); }
+.dist { display: grid; gap: 4px; }
+.bar { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; font: 500 0.85rem var(--font-mono); }
+.bar i {
+  display: block; font-style: normal; background: var(--dead); color: var(--on-ink); text-align: right;
+  padding: 2px 7px; min-width: 22px; box-sizing: border-box; border-radius: 3px; font-variant-numeric: tabular-nums;
+}
+.bar i.hit { background: var(--cyan); }
+.result-word { font: 400 2rem var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; margin: 4px 0 6px; }
+.actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+.btn {
+  font: 600 0.95rem var(--font-body); border-radius: 8px; padding: 11px 18px; cursor: pointer;
+  border: 1px solid var(--block-edge); background: var(--block); color: var(--ink);
+}
+.btn.primary { background: var(--cyan); border-color: var(--cyan); color: var(--on-ink); }
+.countdown { font: 500 0.9rem var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.share-fallback { width: 100%; height: 120px; margin-top: 10px; font: 0.85rem var(--font-mono); box-sizing: border-box; }
+.setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--block-edge); }
+.setting small { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.switch { position: relative; width: 44px; height: 26px; flex: none; }
+.switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 13px; background: var(--key); pointer-events: none; transition: background 0.2s; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--panel); transition: transform 0.2s; }
+.switch input:checked + span { background: var(--cyan); }
+.switch input:checked + span::after { transform: translateX(18px); }
+.switch input:focus-visible + span { outline: 3px solid var(--cyan); outline-offset: 2px; }
+
+@media (max-height: 640px) { .key { height: 46px; } .legend { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tile.flip, .row.shake, .row.win .tile, .tile.filled { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>Five <span>Sorts</span></h1>
+    <div class="tools">
+      <button class="icon-btn" id="btn-help" aria-label="How to play">?</button>
+      <button class="icon-btn" id="btn-stats" aria-label="Statistics">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="modebar">
+    <div class="seg" role="group" aria-label="Game mode">
+      <button id="mode-daily" aria-pressed="true">Daily</button>
+      <button id="mode-practice" aria-pressed="false">Practice</button>
+    </div>
+    <span class="puzzle-no" id="puzzle-no"></span>
+  </div>
+
+  <main>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="board" id="board" aria-label="Guess board"></div>
+  </main>
+
+  <div class="legend" aria-hidden="true">
+    <span><i class="chip" style="background:var(--cyan)"></i>Locked: right letter, right spot</span>
+    <span><i class="chip" style="background:var(--magenta)"></i>Loose: wrong spot</span>
+    <span><i class="chip" style="background:var(--dead)"></i>Dead: not in word</span>
+  </div>
+
+  <div class="keyboard" id="keyboard" aria-label="Keyboard"></div>
+</div>
+
+<div class="overlay" id="ov-help" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <button class="icon-btn close" data-close aria-label="Close">&#10005;</button>
+    <h2 id="help-title">How to play</h2>
+    <p>Set the hidden five-letter word in six tries. Type a real word and press Enter. Each block is then inked to show how close you are.</p>
+    <div class="example"><div class="tile locked">p</div><div class="tile filled">r</div><div class="tile filled">i</div><div class="tile filled">n</div><div class="tile filled">t</div></div>
+    <p><b>Locked</b> (cyan): P is in the word and in the right spot.</p>
+    <div class="example"><div class="tile filled">s</div><div class="tile loose">t</div><div class="tile filled">a</div><div class="tile filled">m</div><div class="tile filled">p</div></div>
+    <p><b>Loose</b> (magenta, with a bar): T is in the word but in a different spot.</p>
+    <div class="example"><div class="tile filled">c</div><div class="tile filled">l</div><div class="tile filled">a</div><div class="tile dead">s</div><div class="tile filled">p</div></div>
+    <p><b>Dead</b> (grey): S is not in the word at all.</p>
+    <h3>Modes</h3>
+    <p><b>Daily</b> gives everyone the same word each day and counts toward your streak. <b>Practice</b> deals a fresh word whenever you like.</p>
+  </div>
+</div>
+
+<div class="overlay" id="ov-stats" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+    <button class="icon-btn close" data-close aria-label="Close">&#10005;</button>
+    <div id="result-block" hidden>
+      <h2 id="result-title"></h2>
+      <div class="result-word" id="result-word"></div>
+    </div>
+    <h2 id="stats-title">Daily statistics</h2>
+    <div class="stats">
+      <div><b id="st-played">0</b><small>Played</small></div>
+      <div><b id="st-win">0</b><small>Win %</small></div>
+      <div><b id="st-streak">0</b><small>Streak</small></div>
+      <div><b id="st-max">0</b><small>Best streak</small></div>
+    </div>
+    <h3>Guess distribution</h3>
+    <div class="dist" id="dist"></div>
+    <div class="actions" id="end-actions" hidden>
+      <button class="btn primary" id="btn-share">Copy result</button>
+      <button class="btn" id="btn-next" hidden>New word</button>
+      <span class="countdown" id="countdown"></span>
+    </div>
+    <textarea class="share-fallback" id="share-fallback" readonly hidden aria-label="Result to copy"></textarea>
+  </div>
+</div>
+
+<div class="overlay" id="ov-settings" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <button class="icon-btn close" data-close aria-label="Close">&#10005;</button>
+    <h2 id="settings-title">Settings</h2>
+    <label class="setting" for="opt-hard">
+      <span>Hard mode<small>Locked and loose letters must be reused in later guesses. Can only change at the start of a game.</small></span>
+      <span class="switch"><input type="checkbox" id="opt-hard"><span></span></span>
+    </label>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Word lists ----------------------------------------------------------
+  var ANSWER_TEXT = "about above actor acute admit adopt adult after again agent agree ahead alarm album alert alike alive allow alone along alter amber among angel anger angle angry ankle apart apple apply apron arena argue arise armor aroma arrow aside asset atlas audio avoid awake award aware bacon badge bagel baker basic basin batch beach beard beast began begin being belly below bench berry birth black blade blame bland blank blast blaze bleak blend bless blind blink bliss block bloom blown blues blunt blush board boast bonus boost booth bound brain brake brand brass brave bread break breed brick bride brief bring brink brisk broad broke brook broom broth brown brush buddy build built bunch burst cabin cable camel candy canoe cargo carry carve catch cause cedar chain chair chalk champ chant chaos charm chart chase cheap check cheek cheer chess chest chick chief child chill choir chord chunk cider civic claim clamp clash clasp class clean clear clerk click cliff climb cling cloak clock close cloth cloud clown coach coast cocoa comet comic coral couch cough could count court cover crack craft crane crash crate crawl crazy cream creek crest crisp crowd crown crude crumb crush crust cubic curve cycle daily dairy daisy dance death debut decay decor delay delta dense depth diary dizzy dodge dough draft drain drama drank drape drawn dread dream dress dried drift drill drink drive drone drown dryer dusty dwarf eager eagle early earth easel eaten ebony eight elbow elder elect elite empty enjoy enter entry equal error essay event every exact exist extra fable faint fairy faith false fancy feast fence ferry fetch fever fiber field fiery fifth fifty fight final flake flame flank flash flask fleet flesh flick fling float flock flood floor flour fluid flush flute focus foggy forge forth forty forum found frame frank fresh frost froze fruit fudge funny gauge ghost giant given glade glare glass gleam glide globe gloom glory glove gnome goose grace grade grain grand grant grape graph grasp grass grave gravy great greed green greet grief grill grind groan groom gross group grove growl grown guard guess guest guide guild habit happy harsh haste hatch haunt haven heart heavy hedge hello hinge hobby honey honor horse hotel hound house hover human humid humor hurry ideal image imply index inner input irony issue ivory jelly jewel joint jolly judge juice juicy jumbo kayak knack knead knife knock known label labor ladle large laser latch later laugh layer learn lease least leave ledge lemon level lever light lilac limit linen liver llama lodge lofty logic loose lover lower loyal lucky lunar lunch lyric magic major maker mango manor maple march marsh match mayor medal media melon mercy merit merry metal meter midst might minor mirth model moist money month moose moral motor motto mound mount mouse mouth movie muddy mural music naive naval nerve never night noble noise north notch novel nurse nylon oasis ocean offer often olive onion opera orbit order organ other otter ought ounce outer owner oxide paint panel panic paper party pasta paste patch pause peace peach pearl pedal penny perch peril petal phase phone photo piano piece pilot pinch pitch pixel pizza place plain plane plank plant plate plaza plead pluck plumb plume plush point polar porch pouch pound power press price pride prime print prior prism prize probe prone proof proud prove prune pulse punch pupil puppy purse quack quail quake query quest queue quick quiet quilt quirk quota quote radar radio rainy raise rally ranch range rapid raven reach react ready realm rebel refer reign relax relay renew reply ridge rifle right rigid rinse ripen risky rival river roast robin robot rocky rough round route royal rugby ruler rural rusty saint salad salon salsa sandy sauce scale scarf scene scent scone scoop scope score scout scrap screw scrub seize sense serve seven shade shaft shake shall shame shape share shark sharp shave shawl sheep sheet shelf shell shift shine shiny shirt shock shore short shout shrub siege sight silky silly since siren sixth sixty skate skill skirt skull slate sleek sleep sleet slice slide slope sloth small smart smell smile smirk smoke snack snail snake sneak snore solar solid solve sonic sound south space spade spare spark spawn speak spear speed spell spend spice spicy spike spine spoke spoon sport spray squad stack staff stage stain stair stake stale stalk stamp stand stare stark start state steak steam steel steep steer stern stick still sting stock stone stood stool storm story stove straw stray strip stuck study stuff stump style sugar suite sunny super surge swamp swarm swear sweat sweep sweet swift swing sword syrup table taken tango taste teach tempo tense tenth thank theme thick thief thing think third thorn those three threw throw thumb tiger tight timer tired title toast today token topic torch total touch tough towel tower toxic trace track trade trail train trait tread treat trend trial tribe trick tried troop trout truck truly trunk trust truth tulip tuner twice twist ultra uncle under union unity until upper upset urban usage usual utter valid value valve vapor vault verse video vigor vinyl viola viral visit vital vivid vocal voice voter wagon waist waste watch water weary weave wedge weigh weird whale wheat wheel where which while whisk white whole width wield windy witty woman world worry worse worst worth would wound woven wrath wreck wrist write wrong yacht yeast yield young youth zebra";
+
+  var EXTRA_TEXT = "aback abbey abort abyss acorn acted adapt added adore adorn affix afoot afire aging aglow aisle alien align alley allot alloy aloft aloud alpha altar amaze amend ample amuse anvil arbor ardor ashen ashes asked atoll attic audit augur avert awful axial axiom balmy banjo barge baron basil baste batty bayou beady beefy beget beige belie belle bendy beret bevel bingo birch bison bites blare bleat bleed bloat blond bluff blurb blurt bogus bossy botch bough boxer brace braid brawl brawn briar bribe brine briny broil brood brute budge buggy bugle bulge bulky bully bumpy bunny burly bushy butte bylaw cache cadet cagey camps canal caper carat carol caste catty caulk cease chafe chaff chard chasm cheat chewy chide chili chimp china chirp choke chore chose chute cinch circa civil clack clang clank clout clove cluck clued clump clung coals cobra colon color comma conch condo corny coupe covet cower coyly crank craze creak creed creep crepe crept cried crier cries crimp croak crone crony crook croon cross croup cruel cumin cupid curly curry curse cyber cynic dandy datum dealt decal decoy defer deign deity delve demon denim depot deter detox devil diner dingy dirty disco ditch ditto ditty diver dogma dolly donor donut dopey doubt dowdy dowel downy dowry dozen drawl dregs droll drool droop dross drove duchy dummy dunce dusky duvet dwell dying eerie egret eject elegy elfin elope elude email embed ember emcee enact endow enemy ennui ensue envoy epoch epoxy equip erase erode erupt ethic evade evict evoke exalt excel exert exile expel extol exult facet farce fatal fatty fault fauna favor feign felon femur feral ferny fewer filet filly filmy filth finch first fishy fixer fizzy fjord flail flair flare flaky flier flint flirt floss flown fluff fluke flung flunk foamy focal foist folly foray forgo forte foyer frail freak friar fried frill frisk frizz frock frond froth frown fully fungi funky furor furry fussy fuzzy gaffe gaily gamer gamma gamut gassy gaudy gaunt gauze gavel gawky gecko geese genie genre girth gizmo glaze glean glint gloat gloss glyph gnash godly going golem golly goody gooey goofy gorge gouge gourd gowns grate grime grimy gripe groin grout gruel gruff grunt guava guile guilt guise gulch gully gumbo gummy guppy gusto gusty hairy halve handy hardy harpy hasty hater hazel heady heath heave hefty heist helix hence heron hilly hippo hitch hoard hoist holly homer horde hotly humph humus hunch hunky husky hutch hyena hyper icily icing idiom idiot idler idyll igloo impel inane inept inert infer ingot inlay inlet inter intro ionic irate islet itchy jaunt jazzy jerky jetty jiffy joker joust jumpy junta juror kebab ketch khaki kiosk kitty knave kneel knelt knoll koala krill lager lance lanky lapel lapse larva lasso latte lathe leafy leaky leant leapt leash leech leery lefty legal leggy lemur libel liege lifer limbo lingo lipid lithe livid loamy lobby local locus lorry louse lousy lowly lucid lumen lumpy lunge lurch lurid lusty lying lymph macaw macho macro madam madly mafia magma maize mambo mange mania manic manly marry mason mauve maxim maybe mealy meant meaty melee merge midge mimic mince miner minty minus misty miser mocha modal modem mogul moldy moody morph mossy motel motif mourn mover mower mucus mulch mummy munch mushy musky musty myrrh nadir nanny natal navel needy neigh nerdy newer newly nicer niche niece ninth nobly nomad noted nudge nutty nymph occur octet odder offal olden omega onset opium optic orate ovary overt owing paddy pagan palsy pansy papal parka parry parse pasty patio patty payee payer pecan penal pence peony perky pesky pesto petty phony piety piggy pinky pious piper pique pithy pivot pixie plaid plait plied plier plump plunk poach poker polka polyp pooch poppy posse potty pouty prank prawn preen pried prick primp privy prowl proxy prude psalm pudgy puffy pulpy purer purge pushy putty pygmy quash quasi queen quell quill rabbi rabid racer radii ramen rarer raspy ratio rayon razor rearm rebar rebus recap recur reedy regal rehab relic remit renal repay repel rerun resin retch retro retry reuse revel revue rhino rhyme rider rigor riser rivet roach rodeo rogue roomy roost rotor rowdy rower ruddy rumba rumor runny rupee sadly salty salvo sassy satin satyr saucy sauna saute savor savvy scald scalp scaly scamp scant scare scorn scowl scram scree scrum seedy sepia serum setup sever shack shady shaky shard shear sheen sheer shied shire shirk shone shook shorn showy shrew shrug shuck shunt shush sieve sigma sinew singe sinus skier skiff skimp skulk skunk slack slain slang slant slash slept slick slime slimy sling slink slosh slump slung slunk slurp slush slyly smack smash smear smelt smite smith smock snare snarl sneer snide sniff snipe snoop snort snout snowy snuck snuff soapy sober soggy sonar sooty sorry soupy spasm speck spied spiel spill spilt spiny spire spite splat split spoil spoof spook spool spore spout sprig spunk spurn spurt squat squib stank stash stead steed stein stiff stilt stink stint stoic stoke stole stomp stony stoop stork stout strap strut stung stunk stunt suave sulky sully sumac surer surly sushi swath swill swine swirl swish swoon swoop synod tabby taboo tacit tacky taffy taint talon tamer tangy taper tapir tardy tarot taunt tawny teary teddy teeth tepid terse testy thigh thong thump thyme tiara tibia tidal tilde tipsy titan topaz torso totem trawl tress triad trite troll trope trove truce tryst tubby tunic turbo tutor twang tweak tweed tweet twerp twine twirl udder ulcer umbra unbox uncut undid undue unfed unfit unify unite unlit unmet untie unzip usher usurp vague vaunt vegan venom venue verge verve vicar vigil villa viper visor vista vixen vodka vogue voila vouch vowel wacky wafer wager waltz waver waxen weedy whack wharf whelp whiff whine whiny whirl whoop wince winch wiper wispy woken woody wooly woozy wordy wrung wryly yearn yummy zesty zonal " +
+    "games words lines rooms years hands times notes plays walks talks jumps looks books trees cards birds lakes hills roads ships stars waves winds bears beans boats bones cakes calls cares cases cells coins cooks costs crabs crops dates deals decks doors drops ducks dunes edges faces facts falls fears feels files fills finds fires flags foods forms frogs gates gifts girls goals goats grows hairs halls heads hears heats helps holds holes homes hopes horns hours ideas items jokes keeps kicks kings kites knees lamps lands leads lifts likes links lists lives loads locks loves makes meals means meets miles minds moves names needs nests opens pages pains pairs parks parts pears picks pills pines pipes plans pools ports posts pulls pumps races rails reads rings rises rocks roles roofs ropes roses rules sails sales seats seeds seems sells sends shops shows sides signs sings sinks sites sizes skies songs soups spots steps stops suits takes tales tanks tapes tasks teams tells tents tests texts tools tours towns turns types units users views votes waits wakes walls wants warms wears weeks wells wines wings wires woods works yards zones";
+
+  function parse(t) {
+    var seen = {}, out = [];
+    t.split(/\s+/).forEach(function (w) {
+      if (/^[a-z]{5}$/.test(w) && !seen[w]) { seen[w] = 1; out.push(w); }
+    });
+    return out;
+  }
+  var ANSWERS = parse(ANSWER_TEXT);
+  var VALID = new Set(ANSWERS.concat(parse(EXTRA_TEXT)));
+
+  // Deterministic shuffle so the daily order isn't alphabetical.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var DAILY_ORDER = ANSWERS.slice();
+  (function () {
+    var r = mulberry32(20260101);
+    for (var i = DAILY_ORDER.length - 1; i > 0; i--) {
+      var j = Math.floor(r() * (i + 1)); var t = DAILY_ORDER[i]; DAILY_ORDER[i] = DAILY_ORDER[j]; DAILY_ORDER[j] = t;
+    }
+  })();
+
+  function dayNumber() {
+    var d = new Date();
+    return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 0, 1)) / 864e5) + 1;
+  }
+
+  // ---- Storage (optional; game works without it) ---------------------------
+  var KEY = "five-sorts:v1";
+  function load() {
+    try { var raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+  var store = load() || {};
+  store.stats = store.stats || { played: 0, wins: 0, streak: 0, max: 0, dist: [0, 0, 0, 0, 0, 0], lastWinDay: null };
+  store.hard = !!store.hard;
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+  // ---- Game state ----------------------------------------------------------
+  var ROWS = 6, COLS = 5;
+  var game; // { mode, answer, guesses:[], marks:[[]], current, over, won, day }
+  var revealing = false;
+
+  function evaluate(guess, answer) {
+    var res = ["dead", "dead", "dead", "dead", "dead"], counts = {};
+    for (var i = 0; i < COLS; i++) {
+      if (guess[i] === answer[i]) res[i] = "locked";
+      else counts[answer[i]] = (counts[answer[i]] || 0) + 1;
+    }
+    for (i = 0; i < COLS; i++) {
+      if (res[i] !== "locked" && counts[guess[i]] > 0) { res[i] = "loose"; counts[guess[i]]--; }
+    }
+    return res;
+  }
+
+  function newGame(mode) {
+    var day = dayNumber();
+    if (mode === "daily") {
+      var answer = DAILY_ORDER[(day - 1 + DAILY_ORDER.length * 1000) % DAILY_ORDER.length];
+      game = { mode: "daily", answer: answer, guesses: [], marks: [], current: "", over: false, won: false, day: day };
+      if (store.daily && store.daily.day === day && store.daily.answer === answer) {
+        store.daily.guesses.forEach(function (g) { game.guesses.push(g); game.marks.push(evaluate(g, answer)); });
+        game.over = !!store.daily.over; game.won = !!store.daily.won;
+      }
+    } else {
+      var pick;
+      do { pick = ANSWERS[Math.floor(Math.random() * ANSWERS.length)]; } while (game && pick === game.answer);
+      game = { mode: "practice", answer: pick, guesses: [], marks: [], current: "", over: false, won: false, day: day };
+    }
+    document.getElementById("mode-daily").setAttribute("aria-pressed", mode === "daily");
+    document.getElementById("mode-practice").setAttribute("aria-pressed", mode === "practice");
+    document.getElementById("puzzle-no").textContent = mode === "daily" ? "Daily No. " + day : "Practice";
+    renderAll();
+  }
+
+  function persistDaily() {
+    if (game.mode !== "daily") return;
+    store.daily = { day: game.day, answer: game.answer, guesses: game.guesses.slice(), over: game.over, won: game.won };
+    save();
+  }
+
+  // ---- Rendering -----------------------------------------------------------
+  var boardEl = document.getElementById("board");
+  var tiles = [], rowsEl = [];
+  for (var r = 0; r < ROWS; r++) {
+    var row = document.createElement("div"); row.className = "row"; row.setAttribute("role", "group");
+    row.setAttribute("aria-label", "Guess " + (r + 1));
+    tiles.push([]);
+    for (var c = 0; c < COLS; c++) {
+      var t = document.createElement("div"); t.className = "tile"; row.appendChild(t); tiles[r].push(t);
+    }
+    boardEl.appendChild(row); rowsEl.push(row);
+  }
+
+  var KB = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"];
+  var kbEl = document.getElementById("keyboard"), keyEls = {};
+  KB.forEach(function (line, i) {
+    var row = document.createElement("div"); row.className = "krow";
+    if (i === 1) row.appendChild(Object.assign(document.createElement("span"), { className: "spacer" }));
+    line.split("").forEach(function (ch) {
+      var b = document.createElement("button"); b.className = "key"; b.type = "button";
+      if (ch === "+") { b.textContent = "Enter"; b.classList.add("wide"); b.dataset.k = "Enter"; }
+      else if (ch === "-") {
+        b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M17 9l-6 6M11 9l6 6"/></svg>';
+        b.classList.add("wide"); b.dataset.k = "Backspace"; b.setAttribute("aria-label", "Delete");
+      } else { b.textContent = ch; b.dataset.k = ch; keyEls[ch] = b; }
+      row.appendChild(b);
+    });
+    if (i === 1) row.appendChild(Object.assign(document.createElement("span"), { className: "spacer" }));
+    kbEl.appendChild(row);
+  });
+
+  var RANK = { dead: 1, loose: 2, locked: 3 };
+  function keyStates() {
+    var st = {};
+    game.guesses.forEach(function (g, gi) {
+      for (var i = 0; i < COLS; i++) {
+        var m = game.marks[gi][i], ch = g[i];
+        if (!st[ch] || RANK[m] > RANK[st[ch]]) st[ch] = m;
+      }
+    });
+    return st;
+  }
+
+  function paintKeys() {
+    var st = keyStates();
+    Object.keys(keyEls).forEach(function (ch) {
+      var el = keyEls[ch]; el.classList.remove("locked", "loose", "dead");
+      if (st[ch]) el.classList.add(st[ch]);
+      el.setAttribute("aria-label", ch + (st[ch] ? ", " + st[ch] : ""));
+    });
+  }
+
+  function paintRow(r) {
+    var g = game.guesses[r], marks = game.marks[r];
+    var text = g || (r === game.guesses.length ? game.current : "");
+    for (var c = 0; c < COLS; c++) {
+      var el = tiles[r][c], ch = text[c] || "";
+      el.textContent = ch;
+      el.className = "tile" + (ch ? " filled" : "") + (marks ? " " + marks[c] : "");
+      el.setAttribute("aria-label", ch ? ch + (marks ? " " + marks[c] : "") : "empty");
+    }
+  }
+
+  function renderAll() {
+    for (var r = 0; r < ROWS; r++) { rowsEl[r].classList.remove("win", "shake"); paintRow(r); }
+    paintKeys();
+    document.getElementById("opt-hard").checked = store.hard;
+  }
+
+  // ---- Feedback ------------------------------------------------------------
+  var toastEl = document.getElementById("toast"), toastTimer;
+  function toast(msg, ms) {
+    toastEl.textContent = msg; toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    if (ms !== 0) toastTimer = setTimeout(function () { toastEl.hidden = true; }, ms || 1600);
+  }
+  function shake(r) {
+    rowsEl[r].classList.remove("shake"); void rowsEl[r].offsetWidth; rowsEl[r].classList.add("shake");
+  }
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- Input ---------------------------------------------------------------
+  function hardModeError(guess) {
+    for (var gi = 0; gi < game.guesses.length; gi++) {
+      var prev = game.guesses[gi], m = game.marks[gi], need = {};
+      for (var i = 0; i < COLS; i++) {
+        if (m[i] === "locked" && guess[i] !== prev[i]) return ordinal(i + 1) + " letter must be " + prev[i].toUpperCase();
+        if (m[i] !== "dead") need[prev[i]] = (need[prev[i]] || 0) + 1;
+      }
+      for (var ch in need) {
+        var have = guess.split(ch).length - 1;
+        if (have < need[ch]) return "Guess must contain " + ch.toUpperCase();
+      }
+    }
+    return null;
+  }
+  function ordinal(n) { return ["", "1st", "2nd", "3rd", "4th", "5th"][n]; }
+
+  function press(k) {
+    if (revealing || !game || game.over) return;
+    var r = game.guesses.length;
+    if (k === "Enter") return submit();
+    if (k === "Backspace") { game.current = game.current.slice(0, -1); paintRow(r); return; }
+    if (/^[a-z]$/.test(k) && game.current.length < COLS) { game.current += k; paintRow(r); }
+  }
+
+  function submit() {
+    var r = game.guesses.length, guess = game.current;
+    if (guess.length < COLS) { toast("Not enough letters"); shake(r); return; }
+    if (!VALID.has(guess)) { toast("Not in word list"); shake(r); return; }
+    if (store.hard) { var err = hardModeError(guess); if (err) { toast(err); shake(r); return; } }
+
+    var marks = evaluate(guess, game.answer);
+    game.guesses.push(guess); game.marks.push(marks); game.current = "";
+    var won = guess === game.answer, lost = !won && game.guesses.length === ROWS;
+    if (won || lost) { game.over = true; game.won = won; }
+    persistDaily();
+
+    revealing = true;
+    var step = reduceMotion ? 0 : 280;
+    for (var c = 0; c < COLS; c++) {
+      (function (c) {
+        var el = tiles[r][c];
+        if (reduceMotion) return;
+        el.style.animationDelay = (c * step) + "ms";
+        el.classList.add("flip");
+        setTimeout(function () {
+          el.classList.remove("filled"); el.classList.add(marks[c]);
+        }, c * step + 250);
+      })(c);
+    }
+    var total = reduceMotion ? 0 : (COLS - 1) * step + 520;
+    setTimeout(function () {
+      for (var c = 0; c < COLS; c++) tiles[r][c].style.animationDelay = "";
+      paintRow(r); paintKeys(); revealing = false;
+      if (game.over) finish(r);
+    }, total);
+  }
+
+  function finish(r) {
+    var praise = ["Pristine.", "Masterful.", "Sharp work.", "Nicely set.", "Solid.", "Phew."];
+    if (game.won) {
+      rowsEl[r].classList.add("win");
+      toast(praise[r]);
+    } else {
+      toast(game.answer.toUpperCase(), 0);
+    }
+    if (game.mode === "daily") recordDaily();
+    setTimeout(function () { openStats(true); }, reduceMotion ? 300 : 1500);
+  }
+
+  function recordDaily() {
+    var s = store.stats;
+    if (s.lastPlayedDay === game.day) return;
+    s.lastPlayedDay = game.day; s.played++;
+    if (game.won) {
+      s.wins++; s.dist[game.guesses.length - 1]++;
+      s.streak = (s.lastWinDay === game.day - 1) ? s.streak + 1 : 1;
+      s.lastWinDay = game.day; s.max = Math.max(s.max, s.streak);
+    } else { s.streak = 0; }
+    save();
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (openOverlay) { if (e.key === "Escape") closeOverlay(); return; }
+    var k = e.key;
+    if (k === "Enter" || k === "Backspace") { e.preventDefault(); press(k); }
+    else if (/^[a-zA-Z]$/.test(k)) press(k.toLowerCase());
+  });
+  kbEl.addEventListener("click", function (e) {
+    var b = e.target.closest(".key"); if (!b) return;
+    press(b.dataset.k); b.blur();
+  });
+
+  // ---- Overlays ------------------------------------------------------------
+  var openOverlay = null;
+  function open(id) {
+    closeOverlay();
+    openOverlay = document.getElementById(id); openOverlay.hidden = false;
+    var f = openOverlay.querySelector("[data-close]"); if (f) f.focus();
+  }
+  function closeOverlay() {
+    if (!openOverlay) return;
+    openOverlay.hidden = true; openOverlay = null;
+    document.getElementById("share-fallback").hidden = true;
+  }
+  document.querySelectorAll(".overlay").forEach(function (ov) {
+    ov.addEventListener("click", function (e) { if (e.target === ov || e.target.closest("[data-close]")) closeOverlay(); });
+  });
+
+  var cdTimer;
+  function openStats(fromEnd) {
+    var s = store.stats;
+    document.getElementById("st-played").textContent = s.played;
+    document.getElementById("st-win").textContent = s.played ? Math.round(100 * s.wins / s.played) : 0;
+    document.getElementById("st-streak").textContent = s.streak;
+    document.getElementById("st-max").textContent = s.max;
+    var maxD = Math.max.apply(null, s.dist.concat([1])), dist = document.getElementById("dist");
+    dist.innerHTML = "";
+    var hitRow = game.mode === "daily" && game.over && game.won ? game.guesses.length - 1 : -1;
+    s.dist.forEach(function (n, i) {
+      var row = document.createElement("div"); row.className = "bar";
+      var pct = Math.max(7, Math.round(100 * n / maxD));
+      row.innerHTML = "<span>" + (i + 1) + "</span><i style=\"width:" + pct + "%\" class=\"" + (i === hitRow ? "hit" : "") + "\">" + n + "</i>";
+      dist.appendChild(row);
+    });
+
+    var rb = document.getElementById("result-block");
+    rb.hidden = !game.over;
+    if (game.over) {
+      document.getElementById("result-title").textContent = game.won
+        ? "Set in " + game.guesses.length + (game.guesses.length === 1 ? " try" : " tries")
+        : "Out of tries";
+      document.getElementById("result-word").textContent = game.answer;
+    }
+    document.getElementById("end-actions").hidden = !game.over;
+    document.getElementById("btn-next").hidden = game.mode !== "practice";
+    clearInterval(cdTimer);
+    var cd = document.getElementById("countdown");
+    if (game.over && game.mode === "daily") {
+      var tick = function () {
+        var now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        var secs = Math.max(0, Math.floor((next - now) / 1000));
+        var h = Math.floor(secs / 3600), m = Math.floor(secs / 60) % 60, sc = secs % 60;
+        cd.textContent = "Next word in " + h + ":" + String(m).padStart(2, "0") + ":" + String(sc).padStart(2, "0");
+      };
+      tick(); cdTimer = setInterval(tick, 1000);
+    } else cd.textContent = "";
+    open("ov-stats");
+  }
+
+  function shareText() {
+    var sq = { locked: "🟦", loose: "🟪", dead: "⬛" };
+    var head = "Five Sorts " + (game.mode === "daily" ? "No. " + game.day : "Practice") + " " +
+      (game.won ? game.guesses.length : "X") + "/6" + (store.hard ? "*" : "");
+    return head + "\n\n" + game.marks.map(function (m) { return m.map(function (x) { return sq[x]; }).join(""); }).join("\n");
+  }
+  document.getElementById("btn-share").addEventListener("click", function () {
+    var text = shareText(), fb = document.getElementById("share-fallback");
+    var fallback = function () { fb.value = text; fb.hidden = false; fb.focus(); fb.select(); toast("Select and copy the text below"); };
+    try {
+      navigator.clipboard.writeText(text).then(function () { toast("Copied to clipboard"); }, fallback);
+    } catch (e) { fallback(); }
+  });
+  document.getElementById("btn-next").addEventListener("click", function () {
+    closeOverlay(); toastEl.hidden = true; newGame("practice");
+  });
+
+  document.getElementById("btn-help").addEventListener("click", function () { open("ov-help"); });
+  document.getElementById("btn-stats").addEventListener("click", function () { openStats(false); });
+  document.getElementById("btn-settings").addEventListener("click", function () { open("ov-settings"); });
+  document.getElementById("opt-hard").addEventListener("change", function (e) {
+    if (game.guesses.length && !game.over) {
+      e.target.checked = store.hard; toast("Hard mode can only change at the start of a game"); return;
+    }
+    store.hard = e.target.checked; save();
+  });
+  document.getElementById("mode-daily").addEventListener("click", function () {
+    if (game.mode !== "daily") { toastEl.hidden = true; newGame("daily"); }
+  });
+  document.getElementById("mode-practice").addEventListener("click", function () {
+    if (game.mode !== "practice") { toastEl.hidden = true; newGame("practice"); }
+  });
+
+  newGame("daily");
+  if (game.over) toast(game.won ? "Today's word is solved" : "Today's word was " + game.answer.toUpperCase(), 2600);
+})();
+</script>
+</body>
+</html>
